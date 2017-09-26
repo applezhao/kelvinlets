@@ -10,6 +10,12 @@ MStatus KevinLetBrushCtx::doPress(MEvent & event)
 	event.getPosition(x, y);
 	currentScreenPos = MPoint(x, y);
 	lastScreenPos = currentScreenPos;
+	MPoint raySource, rayEnd;
+	view.viewToWorld(x, y, raySource, rayEnd);
+	int hitFace;
+	bool hitted = fnMesh.closestIntersection(raySource, rayEnd - raySource, NULL, NULL, false, MSpace::kWorld, 10, false, NULL, lastPointOnMesh, NULL, &hitFace, NULL, NULL, NULL);
+	if (hitted == false)
+		MGlobal::displayError("no hit point!");
 	return MS::kSuccess;
 }
 MStatus KevinLetBrushCtx::doDrag(MEvent & event)
@@ -17,7 +23,7 @@ MStatus KevinLetBrushCtx::doDrag(MEvent & event)
 	MGlobal::displayInfo("doDrag!");
 	short x, y;
 	event.getPosition(x, y);
-	lastScreenPos = currentScreenPos;
+	//lastScreenPos = currentScreenPos;
 	currentScreenPos = MPoint(x, y);
 
 
@@ -39,6 +45,8 @@ MStatus KevinLetBrushCtx::doDrag(MEvent & event)
 	MVector q;
 	view.viewToWorld(lastScreenPos.x, lastScreenPos.y, tp, q);
 	q.normalize();
+	if (currentScreenPos.x < lastScreenPos.x)
+		q = -q;
 	Eigen::Vector3f q_e(q.x, q.y, q.z);
 
 	Eigen::Matrix3f pinchF;
@@ -57,14 +65,14 @@ MStatus KevinLetBrushCtx::doDrag(MEvent & event)
 	MPointArray newPoints;
 	for (size_t i = 0; i < allPoints.length(); i++)
 	{
-		short x, y;
+		/*short x, y;
 		view.worldToView(allPoints[i], x, y);
-		MPoint screenPos(x, y);
+		MPoint screenPos(x, y);*/
 		//if (screenPos.distanceTo(lastScreenPos) <= brushRadius)
 		{
-			MVector vr = screenPos - lastScreenPos;
+			MVector vr = allPoints[i] - lastPointOnMesh;
 			Eigen::Vector3f r_e(vr.x, vr.y, vr.z);
-			float r = screenPos.distanceTo(lastScreenPos);
+			float r = allPoints[i].distanceTo(lastPointOnMesh);
 			float re = sqrt(r*r + radiusScale*radiusScale);
 
 			MVector dis;
@@ -86,7 +94,7 @@ MStatus KevinLetBrushCtx::doDrag(MEvent & event)
 			{
 				float u = (2 * b - a)*(1 / (re*re*re) + 3 * radiusScale*radiusScale / (2 * re*re*re*re*re));
 
-				dis = vr*u*pressure;
+				dis = -vr*u*pressure;
 			}
 			else if (brushMode == k_PINCH)
 			{
@@ -95,7 +103,7 @@ MStatus KevinLetBrushCtx::doDrag(MEvent & event)
 				MVector v1_v(v1.x(), v1.y(), v1.z());
 				MVector v2_v(v2.x(), v2.y(), v2.z());
 				dis = v1_v*(2 * b - a) / (re*re*re) - v2_v * 3 * b / (re*re*re*re*re) - v1_v * 3 * a*radiusScale*radiusScale / (2 * re*re*re*re*re);
-				dis = dis*pressure;
+				dis = -dis*pressure;
 			}
 				
 			newPoints.append(allPoints[i] + dis);

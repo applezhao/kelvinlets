@@ -132,6 +132,8 @@ public:
 	MPoint lastScreenPos;
 	MPoint currentScreenPos;
 
+	MFloatPoint lastPointOnMesh;
+
 	M3dView view;
 	MFnMesh fnMesh;
 
