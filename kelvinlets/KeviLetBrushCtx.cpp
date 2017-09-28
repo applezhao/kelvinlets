@@ -2,6 +2,7 @@
 #include <maya/MFloatPointArray.h>
 #include <maya/MPointArray.h>
 #include <Eigen>
+#include <maya/MFnCamera.h>
 
 MStatus KevinLetBrushCtx::doPress(MEvent & event)
 {
@@ -12,10 +13,16 @@ MStatus KevinLetBrushCtx::doPress(MEvent & event)
 	lastScreenPos = currentScreenPos;
 	MPoint raySource, rayEnd;
 	view.viewToWorld(x, y, raySource, rayEnd);
-	int hitFace;
+	pressRay = rayEnd - raySource;
+	pressRay.normalize();
+	MDagPath cameraDag;
+	view.getCamera(cameraDag);
+	MFnCamera fnCam(cameraDag);
+	cameraPos = fnCam.eyePoint(MSpace::kWorld);
+	/*int hitFace;
 	bool hitted = fnMesh.closestIntersection(raySource, rayEnd - raySource, NULL, NULL, false, MSpace::kWorld, 10, false, NULL, lastPointOnMesh, NULL, &hitFace, NULL, NULL, NULL);
 	if (hitted == false)
-		MGlobal::displayError("no hit point!");
+		MGlobal::displayError("no hit point!");*/
 	return MS::kSuccess;
 }
 MStatus KevinLetBrushCtx::doDrag(MEvent & event)
@@ -70,9 +77,11 @@ MStatus KevinLetBrushCtx::doDrag(MEvent & event)
 		MPoint screenPos(x, y);*/
 		//if (screenPos.distanceTo(lastScreenPos) <= brushRadius)
 		{
-			MVector vr = allPoints[i] - lastPointOnMesh;
+			float proj = MVector(allPoints[i] - cameraPos)*pressRay;
+			MVector vr = MVector(allPoints[i] - cameraPos) - pressRay*proj;
+			//MVector vr = MVector(allPoints[i] - cameraPos)*pressRay - lastPointOnMesh;
 			Eigen::Vector3f r_e(vr.x, vr.y, vr.z);
-			float r = allPoints[i].distanceTo(lastPointOnMesh);
+			float r = vr.length();
 			float re = sqrt(r*r + radiusScale*radiusScale);
 
 			MVector dis;

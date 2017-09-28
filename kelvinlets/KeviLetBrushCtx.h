@@ -104,6 +104,10 @@ public:
 	float pressure;//|f|
 	float radiusScale;//epsilon
 
+	float radiusScale1;//epsilon
+	float radiusScale2;//epsilon
+	float radiusScale3;//epsilon
+
 	float elasticShearModulus;//miu
 	float poissonRatio;//v
 
@@ -132,7 +136,9 @@ public:
 	MPoint lastScreenPos;
 	MPoint currentScreenPos;
 
-	MFloatPoint lastPointOnMesh;
+	//MFloatPoint lastPointOnMesh;
+	MVector pressRay;
+	MFloatPoint cameraPos;
 
 	M3dView view;
 	MFnMesh fnMesh;
@@ -140,12 +146,11 @@ public:
 private:
 	MVector getForce(const MPoint& startScreenPos, const MPoint& endScreenPos)
 	{
-		MPoint pt1, pt2;
-		MVector v1, v2;
-		view.viewToWorld(startScreenPos.x, startScreenPos.y, pt1, v1);
-		view.viewToWorld(endScreenPos.x, endScreenPos.y, pt2, v2);
+		MPoint start_near_p, end_near_p, start_far_p, end_far_p;
+		view.viewToWorld(startScreenPos.x, startScreenPos.y, start_near_p, start_far_p);
+		view.viewToWorld(endScreenPos.x, endScreenPos.y, end_near_p, end_far_p);
 
-		return v2.normal() - v1.normal();
+		return MVector(end_far_p- start_far_p).normal();
 	}
 };
 
