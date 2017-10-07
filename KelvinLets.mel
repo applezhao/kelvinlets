@@ -1,0 +1,103 @@
+loadPlugin "kelvinletsMaya.so";
+
+if ( `window -exists KelvinLetWindow` ) 
+{
+	deleteUI KelvinLetWindow;
+}
+
+window -t "KelvinLet Brush" KelvinLetWindow;
+	$frame = `frameLayout -label "Brush Parameters:"`;
+		columnLayout -adjustableColumn true;
+			floatSliderGrp -label "Pressure" -field true
+							-fieldMinValue 0 -fieldMaxValue 10
+							-minValue 0 -maxValue 1 -value 0.2 pressure_ui;
+
+			floatSliderGrp -label "Poisson Ratio" -field true
+							-fieldMinValue 0 -fieldMaxValue 1000
+							-minValue 0 -maxValue 2 -value 0.5 poisson_ui;
+
+			floatSliderGrp -label "Elastic Shear Modulus" -field true
+							-fieldMinValue 0 -fieldMaxValue 10
+							-minValue 0 -maxValue 10 -value 1 shearModulus_ui;
+
+			separator -style "single";
+
+		columnLayout -adjustableColumn true;
+			floatSliderGrp -label "RadiuScale 1" -field true
+							-fieldMinValue 0 -fieldMaxValue 100
+							-minValue 0 -maxValue 10 -value 2 rs1_ui;
+
+			floatSliderGrp -label "RadiuScale 2" -field true
+							-fieldMinValue 0 -fieldMaxValue 100
+							-minValue 0 -maxValue 10 -value 4 rs2_ui;
+
+			floatSliderGrp -label "RadiuScale 3" -field true
+							-fieldMinValue 0 -fieldMaxValue 100
+							-minValue 0 -maxValue 10 -value 6 rs3_ui;
+
+			separator -style "single";
+		columnLayout -adjustableColumn true;
+			$radio_brushMode = `radioCollection brushmode_ui`;
+			$rowL = `rowLayout -numberOfColumns 7`;
+				// add some radio buttons to the collection
+				$grab  = `radioButton -label "Grab" -select -parent $rowL Grab`;
+				$grab_bi  = `radioButton -label "Grab BiScale" -parent $rowL Grab_BiScale`;
+				$grab_tri  = `radioButton -label "Grab TriScale"  -parent $rowL Grab_TriScale`;
+				$twist  = `radioButton -label "Twist"  -parent $rowL Twist`;
+				$scale  = `radioButton -label "Scale"  -parent $rowL Scale`;
+				$pinch  = `radioButton -label "Pinch"  -parent $rowL Pinch`;
+				$brush_size  = `radioButton -label "Brush Size"  -parent $rowL Size_Adjust`;
+
+		columnLayout -adjustableColumn true -parent $frame;
+			separator -style "single";
+			$radio_is2D = `radioCollection is2D_ui`;
+			$row_2d = `rowLayout -numberOfColumns 2`;
+				// add some radio buttons to the collection
+				$is3d  = `radioButton -label "3D Brush" -select -parent $row_2d is3d`;
+				$is2d  = `radioButton -label "2D Brush" -parent $row_2d is2d`;
+
+		
+		columnLayout  -adjustableColumn true -parent $frame;
+			separator -style "single";
+			button -label "KelvinLetBrush" -command "kelvinBrushPressCallBack";
+showWindow KelvinLetWindow;
+
+global proc kelvinBrushPressCallBack()
+{
+	string $selectedShapes[] = `ls -selection -dag -type "mesh"`;
+	if (  size($selectedShapes) == 0 )
+	{
+		error "No Mesh Is Selected!!!!!!!!!!!!\n";
+		return;
+	}
+		
+	$brushRadius = 50 ;
+	if (`KevinLetBrushCtx -q -ex kelvinBrushContext`) 
+	{
+		$brushRadius = `KevinLetBrushCtx -q -bs "kelvinBrushContext"`;
+		print $brushRadius;
+		deleteUI kelvinBrushContext;
+	}
+	print "let's begin kelvinlets brush!";
+	$pressure = `floatSliderGrp -q -value pressure_ui`;
+	$possion = `floatSliderGrp -q -value poisson_ui`;
+	$shear = `floatSliderGrp -q -value shearModulus_ui`;
+	$radiusScale1 = `floatSliderGrp -q -value rs1_ui`;
+	$radiusScale2 = `floatSliderGrp -q -value rs2_ui`;
+	$radiusScale3 = `floatSliderGrp -q -value rs3_ui`;
+	print $pressure;
+	print $possion;
+	print $shear;
+	print $radiusScale1;
+	print $radiusScale2;
+	print $radiusScale3;
+	$brushModeStr = `radioCollection -q -select brushmode_ui`;
+	$is2dStr = `radioCollection -q -select is2D_ui`;
+	print $brushModeStr;
+	print $is2dStr;
+	if ( $is2dStr == "is2d" )
+		KevinLetBrushCtx -brushMode $brushModeStr -is2DBrush 1 -brushSize $brushRadius -pressure $pressure -poissonRatio $possion -elasticShearModulus $shear -rs1 $radiusScale1 -rs2 $radiusScale2 -rs3 $radiusScale3 kelvinBrushContext;
+	else
+		KevinLetBrushCtx -brushMode $brushModeStr -is2DBrush 0  -brushSize $brushRadius -pressure $pressure  -poissonRatio $possion -elasticShearModulus $shear -rs1 $radiusScale1 -rs2 $radiusScale2 -rs3 $radiusScale3 kelvinBrushContext;
+	setToolTo kelvinBrushContext;
+}
